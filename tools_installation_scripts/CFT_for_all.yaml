@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for provisioning an EC2 instance with Ubuntu OS, 25 GB storage, Docker installed, Jenkins installed, Maven installed, Trivy installed, Artifactory installed, and a security group allowing all traffic from 0.0.0.0
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+
+Resources:
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group allowing all traffic
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c55b159cbfafe1f0 # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
+      InstanceType: t2.medium
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !Ref EC2SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 25
+            VolumeType: gp2 # General Purpose SSD (GP2)
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt upgrade -y
+          sudo apt install openjdk-17-jre -y
+          curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+            /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+          echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+            https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+            /etc/apt/sources.list.d/jenkins.list > /dev/null
+          sudo apt-get update -y
+          sudo apt-get install jenkins -y
+          sudo apt install apt-transport-https ca-certificates curl software-properties-common wget gnupg lsb-release -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+          sudo apt install docker-ce -y
+          sudo usermod -aG docker $USER
+          docker pull docker.bintray.io/jfrog/artifactory-oss:latest
+          sudo mkdir -p /jfrog/artifactory
+          sudo chown -R 1030 /jfrog/
+          docker run --name artifactory -d \
+            -p 8081:8081 \
+            -p 8082:8082 \
+            -v /jfrog/artifactory:/var/opt/jfrog/artifactory \
+            docker.bintray.io/jfrog/artifactory-oss:latest
+
+Outputs:
+  InstanceId:
+    Description: Instance ID of the provisioned EC2 instance
+    Value: !Ref EC2Instance
+  InstancePublicIp:
+    Description: Public IP address of the provisioned EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+  InstancePrivateIp:
+    Description: Private IP address of the provisioned EC2 instance
+    Value: !GetAtt EC2Instance.PrivateIp
