@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template for provisioning an EC2 instance with Ubuntu OS, 25 GB storage, Docker installed, Jenkins installed, Maven installed, Trivy installed, Artifactory installed, Sonarqube installed, and a security group allowing all traffic from 0.0.0.0
+Description: CloudFormation template for provisioning an EC2 instance with Ubuntu OS, 25 GB storage, Docker installed, Jenkins installed, Maven installed, Trivy installed, Sonarqube installed, and a security group allowing all traffic from 0.0.0.0
 
 Parameters:
   KeyName:
