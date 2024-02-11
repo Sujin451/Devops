@@ -19,7 +19,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c7217cdde317cfec # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
+      ImageId: ami-0c55b159cbfafe1f0 # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
       InstanceType: t2.medium
       KeyName: !Ref KeyName
       SecurityGroups:
@@ -35,6 +35,8 @@ Resources:
           sudo apt update -y
           sudo apt upgrade -y
           sudo apt install openjdk-17-jre -y
+          
+          # Install Jenkins
           curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
             /usr/share/keyrings/jenkins-keyring.asc > /dev/null
           echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
@@ -42,13 +44,22 @@ Resources:
             /etc/apt/sources.list.d/jenkins.list > /dev/null
           sudo apt-get update -y
           sudo apt-get install jenkins -y
+          sudo systemctl status jenkins
+          
+          # Install Trivy
           sudo apt install apt-transport-https ca-certificates curl software-properties-common wget gnupg lsb-release -y
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
           echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
           sudo apt-get update
           sudo apt-get install trivy -y
+          trivy --version
+          
+          # Install Docker
           sudo apt install docker-ce -y
           sudo usermod -aG docker $USER
+          docker --version
+          
+          # Install Artifactory
           docker pull docker.bintray.io/jfrog/artifactory-oss:latest
           sudo mkdir -p /jfrog/artifactory
           sudo chown -R 1030 /jfrog/
@@ -57,6 +68,7 @@ Resources:
             -p 8082:8082 \
             -v /jfrog/artifactory:/var/opt/jfrog/artifactory \
             docker.bintray.io/jfrog/artifactory-oss:latest
+          docker ps
 
 Outputs:
   InstanceId:
@@ -68,3 +80,23 @@ Outputs:
   InstancePrivateIp:
     Description: Private IP address of the provisioned EC2 instance
     Value: !GetAtt EC2Instance.PrivateIp
+  JenkinsStatus:
+    Description: Status of Jenkins service
+    Value: !Sub "Jenkins service is ${JenkinsStatus}"
+    Export:
+      Name: !Sub "${AWS::StackName}-JenkinsStatus"
+  TrivyVersion:
+    Description: Version of Trivy installed
+    Value: !Sub "Trivy version is ${TrivyVersion}"
+    Export:
+      Name: !Sub "${AWS::StackName}-TrivyVersion"
+  DockerVersion:
+    Description: Version of Docker installed
+    Value: !Sub "Docker version is ${DockerVersion}"
+    Export:
+      Name: !Sub "${AWS::StackName}-DockerVersion"
+  ArtifactoryStatus:
+    Description: Status of Artifactory container
+    Value: !Sub "Artifactory container status is ${ArtifactoryStatus}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ArtifactoryStatus"
