@@ -56,6 +56,7 @@ Resources:
 
           # Install Git
           sudo apt install git -y
+          git --version
           
           # Install maven
           sudo apt install maven -y
@@ -69,6 +70,10 @@ Resources:
           sudo apt-cache policy docker-ce -y
           sudo apt install docker-ce -y
           sudo chmod 777 /var/run/docker.sock
+          # Wait until Docker is installed
+          until docker --version > /dev/null 2>&1; do
+            sleep 1
+          done
           docker --version > /tmp/docker_version.txt
           
           # Install Sonarqube
