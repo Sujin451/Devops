@@ -19,7 +19,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c55b159cbfafe1f0 # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
+      ImageId: ami-0c7217cdde317cfec # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
       InstanceType: t2.medium
       KeyName: !Ref KeyName
       SecurityGroups:
